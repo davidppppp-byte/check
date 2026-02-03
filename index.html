@@ -69,7 +69,7 @@
             "不得抽煙。"
         ];
 
-        // --- 2. 穩定版 SVG 圖標元件 (強化尺寸限制) ---
+        // --- 2. 穩定版 SVG 圖標元件 ---
         const Icon = ({ name, className = "w-6 h-6" }) => {
             const icons = {
                 'check': <path d="M20 6 9 17l-5-5" />,
@@ -85,7 +85,8 @@
                 'user-plus': <g><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="16" y1="11" x2="22" y2="11"/></g>,
                 'lock': <g><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4" /></g>,
                 'unlock': <g><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1" /></g>,
-                'package': <path d="M16.5 9.4 7.5 4.21M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16zM3.27 6.96 12 12.01l8.73-5.05M12 22.08V12" />
+                'package': <path d="M16.5 9.4 7.5 4.21M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16zM3.27 6.96 12 12.01l8.73-5.05M12 22.08V12" />,
+                'medal': <g><path d="M7.21 15 2.66 7.14a2 2 0 0 1 .13-2.2L4.4 2.8A2 2 0 0 1 6 2h12a2 2 0 0 1 1.6.8l1.6 2.14a2 2 0 0 1 .14 2.2L16.79 15"/><circle cx="12" cy="15" r="5"/><path d="M12 18V12"/></g>
             };
             return (
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className} style={{ flexShrink: 0 }}>
@@ -191,10 +192,29 @@
                 } catch (err) { console.error("Save failed", err); }
             };
 
-            // 使用 useMemo 加速過濾，並確保 employees 不為空
             const currentDeptEmps = useMemo(() => {
                 return (employees || []).filter(e => e && e.dept === selectedDept);
             }, [employees, selectedDept]);
+
+            // 計算年度表現數據
+            const annualStats = useMemo(() => {
+                const currentYear = new Date().getFullYear().toString();
+                const yearRecords = (records || []).filter(r => r && r.date && r.date.startsWith(currentYear));
+                
+                return (employees || []).map(emp => {
+                    const empRecs = yearRecords.filter(r => r.employeeId === emp.id);
+                    const failCount = empRecs.filter(r => r.status === 'fail').length;
+                    const totalCount = empRecs.length;
+                    const passRate = totalCount > 0 ? Math.round(((totalCount - failCount) / totalCount) * 100) : 100;
+                    
+                    return {
+                        ...emp,
+                        failCount,
+                        totalCount,
+                        passRate
+                    };
+                }).sort((a, b) => a.passRate - b.passRate); // 預設將狀況較多(合格率低)的排在前面，方便查看
+            }, [employees, records]);
 
             if (loading) return (
                 <div className="min-h-screen flex flex-col items-center justify-center bg-white space-y-4">
@@ -208,9 +228,7 @@
                     {/* Header */}
                     <header className="bg-white/95 backdrop-blur-md border-b border-slate-100 sticky top-0 z-40 p-5 flex justify-between items-center shadow-sm">
                         <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 bg-slate-900 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-slate-200">
-                                <Icon name="clipboard" className="w-5 h-5" />
-                            </div>
+                            <div className="w-10 h-10 bg-slate-900 rounded-2xl flex items-center justify-center text-white"><Icon name="clipboard" className="w-5 h-5" /></div>
                             <div>
                                 <h1 className="text-lg font-black leading-none tracking-tight text-slate-800">蒙恩服儀檢查</h1>
                                 <div className="flex items-center gap-1 mt-1">
@@ -311,31 +329,70 @@
 
                         {view === 'history' && (
                             <div className="space-y-6 animate-in slide-in-from-bottom duration-300">
+                                {/* 頂部今日摘要 */}
                                 <div className="grid grid-cols-2 gap-4">
                                     <div className="bg-blue-600 p-5 rounded-3xl text-white shadow-lg shadow-blue-100">
                                         <div className="text-[10px] font-black uppercase opacity-60 tracking-wider">今日完成率</div>
                                         <div className="text-3xl font-black mt-1">{employees.length > 0 ? Math.round(((records || []).filter(r => r && r.date === todayStr).length / employees.length) * 100) : 0}%</div>
                                     </div>
                                     <div className="bg-red-500 p-5 rounded-3xl text-white shadow-lg shadow-red-100">
-                                        <div className="text-[10px] font-black uppercase opacity-60 tracking-wider">今日異常數</div>
+                                        <div className="text-[10px] font-black uppercase opacity-60 tracking-wider">今日異常</div>
                                         <div className="text-3xl font-black mt-1">{(records || []).filter(r => r && r.date === todayStr && r.status === 'fail').length}</div>
                                     </div>
                                 </div>
+
+                                {/* 年度考核表現總表 */}
                                 <div className="space-y-3">
-                                    <h3 className="text-xs font-black text-slate-400 uppercase px-2 tracking-widest text-center">本日異常清單</h3>
-                                    {records.filter(r => r && r.date === todayStr && r.status === 'fail').length === 0 ? (
-                                        <div className="text-center py-12 bg-white rounded-3xl border border-dashed border-slate-200 text-slate-300 font-bold">目前無異常紀錄</div>
-                                    ) : (
-                                        records.filter(r => r && r.date === todayStr && r.status === 'fail').map(r => (
-                                            <div key={r.id} className="bg-red-50 p-4 rounded-2xl border border-red-100 animate-in slide-in-from-top duration-300">
-                                                <div className="flex justify-between items-center mb-2 font-black text-red-900">
-                                                    <span className="truncate pr-2">{r.employeeName}</span>
-                                                    <span className="text-[10px] flex-shrink-0 font-black bg-red-100 px-2 py-0.5 rounded-full">{r.dept}</span>
-                                                </div>
-                                                <ul className="text-xs text-red-700 space-y-1 list-disc list-inside font-medium">{r.failedItems?.map((i, idx) => <li key={idx}>{i}</li>)}</ul>
+                                    <div className="flex items-center gap-2 px-2">
+                                        <Icon name="medal" className="w-4 h-4 text-amber-500" />
+                                        <h3 className="text-xs font-black text-slate-800 uppercase tracking-widest">{new Date().getFullYear()} 年度表現考核總表</h3>
+                                    </div>
+                                    <div className="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden">
+                                        <div className="bg-slate-50 px-4 py-3 border-b flex justify-between text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                                            <span>同仁姓名</span>
+                                            <div className="flex gap-4">
+                                                <span>累計異常</span>
+                                                <span className="w-12 text-right">合格率</span>
                                             </div>
-                                        ))
-                                    )}
+                                        </div>
+                                        <div className="divide-y divide-slate-50">
+                                            {annualStats.length === 0 ? (
+                                                <div className="p-8 text-center text-slate-300 font-bold text-sm">尚無年度數據</div>
+                                            ) : (
+                                                annualStats.map(stat => (
+                                                    <div key={stat.id} className="px-4 py-4 flex items-center justify-between transition-colors hover:bg-slate-50">
+                                                        <div className="min-w-0 flex-1">
+                                                            <div className="font-bold text-slate-800 flex items-center gap-2">
+                                                                {stat.name}
+                                                                {stat.passRate === 100 && stat.totalCount > 5 && <span className="text-[9px] bg-green-100 text-green-600 px-1.5 py-0.5 rounded-full">優良</span>}
+                                                                {stat.passRate < 80 && <span className="text-[9px] bg-red-100 text-red-600 px-1.5 py-0.5 rounded-full font-black">需注意</span>}
+                                                            </div>
+                                                            <div className="text-[9px] text-slate-400 font-bold uppercase">{stat.dept}</div>
+                                                        </div>
+                                                        <div className="flex items-center gap-4">
+                                                            <div className={`text-sm font-black ${stat.failCount > 0 ? 'text-red-500' : 'text-slate-300'}`}>
+                                                                {stat.failCount} <span className="text-[10px] opacity-40">次</span>
+                                                            </div>
+                                                            <div className="w-12 text-right">
+                                                                <div className={`text-sm font-black ${stat.passRate >= 95 ? 'text-blue-600' : stat.passRate >= 80 ? 'text-amber-500' : 'text-red-600'}`}>
+                                                                    {stat.passRate}%
+                                                                </div>
+                                                                <div className="w-full h-1 bg-slate-100 rounded-full mt-1 overflow-hidden">
+                                                                    <div 
+                                                                        className={`h-full transition-all duration-1000 ${stat.passRate >= 95 ? 'bg-blue-500' : stat.passRate >= 80 ? 'bg-amber-500' : 'bg-red-500'}`} 
+                                                                        style={{ width: `${stat.passRate}%` }}
+                                                                    />
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                ))
+                                            )}
+                                        </div>
+                                    </div>
+                                    <p className="px-3 text-[9px] text-slate-400 font-medium leading-relaxed italic">
+                                        * 此表格依據年度內所有抽查紀錄計算。合格率可作為年底考核加減分之重要依據。排名由合格率低至高排列。
+                                    </p>
                                 </div>
                             </div>
                         )}
@@ -344,7 +401,7 @@
                     <nav className="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-white/95 backdrop-blur-md border-t border-slate-100 p-2 pb-8 z-30 flex justify-around shadow-2xl">
                         <button onClick={() => setView('check')} className={`flex flex-col items-center p-3 rounded-2xl transition-all active-scale ${view === 'check' ? 'bg-slate-900 text-white shadow-lg' : 'text-slate-400'}`}><Icon name="clipboard" className="w-5 h-5"/><span className="text-[10px] font-black mt-1 uppercase">服儀檢查</span></button>
                         <button onClick={() => { if(isAdmin) setView('manage'); else { setShowLogin(true); setPwInput(''); setLoginErr(false); } }} className={`flex flex-col items-center p-3 rounded-2xl transition-all active-scale ${view === 'manage' ? 'bg-slate-900 text-white shadow-lg' : 'text-slate-400'}`}><Icon name="users" className="w-5 h-5"/><span className="text-[10px] font-black mt-1 uppercase">人員管理</span></button>
-                        <button onClick={() => { if(isAdmin) setView('history'); else { setShowLogin(true); setPwInput(''); setLoginErr(false); } }} className={`flex flex-col items-center p-3 rounded-2xl transition-all active-scale ${view === 'history' ? 'bg-slate-900 text-white shadow-lg' : 'text-slate-400'}`}><Icon name="chart" className="w-5 h-5"/><span className="text-[10px] font-black mt-1 uppercase">數據統計</span></button>
+                        <button onClick={() => { if(isAdmin) setView('history'); else { setShowLogin(true); setPwInput(''); setLoginErr(false); } }} className={`flex flex-col items-center p-3 rounded-2xl transition-all active-scale ${view === 'history' ? 'bg-slate-900 text-white shadow-lg' : 'text-slate-400'}`}><Icon name="chart" className="w-5 h-5"/><span className="text-[10px] font-black mt-1 uppercase">表現考核</span></button>
                     </nav>
 
                     {activeEmp && (
