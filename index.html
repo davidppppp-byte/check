@@ -69,7 +69,7 @@
             "不得抽煙。"
         ];
 
-        // --- 2. 穩定版 SVG 圖標元件 ---
+        // --- 2. 穩定版 SVG 圖標元件 (強化尺寸限制) ---
         const Icon = ({ name, className = "w-6 h-6" }) => {
             const icons = {
                 'check': <path d="M20 6 9 17l-5-5" />,
@@ -88,7 +88,7 @@
                 'package': <path d="M16.5 9.4 7.5 4.21M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16zM3.27 6.96 12 12.01l8.73-5.05M12 22.08V12" />
             };
             return (
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className}>
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className} style={{ flexShrink: 0 }}>
                     {icons[name] || null}
                 </svg>
             );
@@ -208,7 +208,9 @@
                     {/* Header */}
                     <header className="bg-white/95 backdrop-blur-md border-b border-slate-100 sticky top-0 z-40 p-5 flex justify-between items-center shadow-sm">
                         <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 bg-slate-900 rounded-2xl flex items-center justify-center text-white"><Icon name="clipboard" className="w-5 h-5" /></div>
+                            <div className="w-10 h-10 bg-slate-900 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-slate-200">
+                                <Icon name="clipboard" className="w-5 h-5" />
+                            </div>
                             <div>
                                 <h1 className="text-lg font-black leading-none tracking-tight text-slate-800">蒙恩服儀檢查</h1>
                                 <div className="flex items-center gap-1 mt-1">
@@ -232,7 +234,7 @@
                                     <div className="grid gap-2">
                                         {DEPARTMENTS.map(d => (
                                             <button key={d} onClick={() => setSelectedDept(d)} className={`p-3 text-left rounded-xl border-2 transition-all font-bold text-sm flex items-center justify-between active-scale ${selectedDept === d ? 'border-blue-600 bg-blue-50 text-blue-700' : 'border-slate-50 bg-slate-50 text-slate-500'}`}>
-                                                {d} {selectedDept === d && <Icon name="check" className="w-4 h-4" />}
+                                                <span className="truncate pr-2">{d}</span> {selectedDept === d && <Icon name="check" className="w-4 h-4" />}
                                             </button>
                                         ))}
                                     </div>
@@ -249,11 +251,16 @@
                                                     setActiveEmp(emp);
                                                     setTempChecks(r ? items.reduce((a, i) => ({...a, [i]: !r.failedItems?.includes(i)}), {}) : items.reduce((a, i) => ({...a, [i]: true}), {}));
                                                 }} className={`flex items-center justify-between p-4 rounded-2xl shadow-sm border-2 cursor-pointer transition-all active-scale ${!r ? 'bg-white border-transparent' : r.status === 'pass' ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}`}>
-                                                    <div className="flex items-center gap-3">
-                                                        <div className={`w-10 h-10 rounded-full flex items-center justify-center font-black ${!r ? 'bg-slate-100 text-slate-400' : r.status === 'pass' ? 'bg-green-500 text-white' : 'bg-red-500 text-white'}`}>{(emp.name || "?").charAt(0)}</div>
-                                                        <div><div className="font-bold text-slate-800">{emp.name}</div><div className="text-[10px] font-bold uppercase text-slate-400">{!r ? '待檢' : r.status === 'pass' ? '合格' : '異常報備'}</div></div>
+                                                    <div className="flex items-center gap-3 flex-1 min-w-0">
+                                                        <div className={`w-10 h-10 rounded-full flex-shrink-0 flex items-center justify-center font-black ${!r ? 'bg-slate-100 text-slate-400' : r.status === 'pass' ? 'bg-green-500 text-white' : 'bg-red-500 text-white'}`}>{(emp.name || "?").charAt(0)}</div>
+                                                        <div className="truncate">
+                                                            <div className="font-bold text-slate-800 truncate">{emp.name}</div>
+                                                            <div className="text-[10px] font-bold uppercase text-slate-400">{!r ? '待檢' : r.status === 'pass' ? '合格' : '異常報備'}</div>
+                                                        </div>
                                                     </div>
-                                                    {!r ? <Icon name="chevron-right" className="text-slate-200" /> : r.status === 'pass' ? <Icon name="success" className="text-green-500" /> : <Icon name="alert" className="text-red-500" />}
+                                                    <div className="flex-shrink-0 ml-2">
+                                                        {!r ? <Icon name="chevron-right" className="w-5 h-5 text-slate-200" /> : r.status === 'pass' ? <Icon name="success" className="w-6 h-6 text-green-500" /> : <Icon name="alert" className="w-6 h-6 text-red-500" />}
+                                                    </div>
                                                 </div>
                                             );
                                         })
@@ -266,8 +273,8 @@
                             <div className="space-y-6 animate-in slide-in-from-bottom duration-300">
                                 <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm space-y-4">
                                     <div className="flex justify-between items-center"><h3 className="font-black text-slate-800 flex items-center gap-2"><Icon name="user-plus" className="w-5 h-5" /> 人員異動</h3><button onClick={() => setBulkMode(!bulkMode)} className="text-[10px] font-black text-blue-600 bg-blue-50 px-3 py-1 rounded-full uppercase tracking-tighter">{bulkMode ? '單筆' : '批次'}</button></div>
-                                    <select className="w-full p-3 bg-slate-50 rounded-xl font-bold border-0 outline-none" value={newEmpDept} onChange={e => setNewEmpDept(e.target.value)}>{DEPARTMENTS.map(d => <option key={d} value={d}>{d}</option>)}</select>
-                                    {bulkMode ? <textarea placeholder="姓名，用逗號或換行隔開" className="w-full p-4 bg-slate-50 rounded-xl min-h-[120px] outline-none font-medium border-0" value={bulkNames} onChange={e => setBulkNames(e.target.value)} /> : <input type="text" placeholder="員工姓名" className="w-full p-4 bg-slate-50 rounded-xl font-bold outline-none border-0" value={newEmpName} onChange={e => setNewEmpName(e.target.value)} />}
+                                    <select className="w-full p-3 bg-slate-50 rounded-xl font-bold border-0 outline-none text-sm" value={newEmpDept} onChange={e => setNewEmpDept(e.target.value)}>{DEPARTMENTS.map(d => <option key={d}>{d}</option>)}</select>
+                                    {bulkMode ? <textarea placeholder="批次模式：姓名，用逗號或換行隔開" className="w-full p-4 bg-slate-50 rounded-xl min-h-[120px] outline-none font-medium border-0 text-sm" value={bulkNames} onChange={e => setBulkNames(e.target.value)} /> : <input type="text" placeholder="單筆模式：輸入員工姓名" className="w-full p-4 bg-slate-50 rounded-xl font-bold outline-none border-0 text-sm" value={newEmpName} onChange={e => setNewEmpName(e.target.value)} />}
                                     <button onClick={async () => {
                                         try {
                                             const col = db.collection('artifacts').doc(APP_ID).collection('public').doc('data').collection('employees');
@@ -287,12 +294,15 @@
                                     <h3 className="text-xs font-black text-slate-400 uppercase px-2 tracking-widest">目前名單 ({employees.length})</h3>
                                     {employees.map(e => (
                                         <div key={e.id} className="bg-white p-4 rounded-2xl flex justify-between items-center border border-slate-50 shadow-sm animate-in fade-in duration-300">
-                                            <div><div className="font-bold text-slate-800">{e.name}</div><div className="text-[10px] text-slate-400">{e.dept}</div></div>
+                                            <div className="min-w-0 flex-1 pr-4">
+                                                <div className="font-bold text-slate-800 truncate">{e.name}</div>
+                                                <div className="text-[10px] text-slate-400 truncate">{e.dept}</div>
+                                            </div>
                                             <button onClick={async () => {
                                                 if(confirm(`確認將 ${e.name} 從名單移除？`)) {
                                                     await db.collection('artifacts').doc(APP_ID).collection('public').doc('data').collection('employees').doc(e.id).delete();
                                                 }
-                                            }} className="p-2 text-slate-200 hover:text-red-500 transition-colors"><Icon name="trash" className="w-5 h-5" /></button>
+                                            }} className="p-2 text-slate-200 hover:text-red-500 flex-shrink-0 transition-colors"><Icon name="trash" className="w-5 h-5" /></button>
                                         </div>
                                     ))}
                                 </div>
@@ -318,7 +328,10 @@
                                     ) : (
                                         records.filter(r => r && r.date === todayStr && r.status === 'fail').map(r => (
                                             <div key={r.id} className="bg-red-50 p-4 rounded-2xl border border-red-100 animate-in slide-in-from-top duration-300">
-                                                <div className="flex justify-between items-center mb-2 font-black text-red-900"><span>{r.employeeName}</span><span className="text-[10px] font-black bg-red-100 px-2 py-0.5 rounded-full">{r.dept}</span></div>
+                                                <div className="flex justify-between items-center mb-2 font-black text-red-900">
+                                                    <span className="truncate pr-2">{r.employeeName}</span>
+                                                    <span className="text-[10px] flex-shrink-0 font-black bg-red-100 px-2 py-0.5 rounded-full">{r.dept}</span>
+                                                </div>
                                                 <ul className="text-xs text-red-700 space-y-1 list-disc list-inside font-medium">{r.failedItems?.map((i, idx) => <li key={idx}>{i}</li>)}</ul>
                                             </div>
                                         ))
@@ -329,17 +342,17 @@
                     </main>
 
                     <nav className="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-white/95 backdrop-blur-md border-t border-slate-100 p-2 pb-8 z-30 flex justify-around shadow-2xl">
-                        <button onClick={() => setView('check')} className={`flex flex-col items-center p-3 rounded-2xl transition-all active-scale ${view === 'check' ? 'bg-slate-900 text-white shadow-lg' : 'text-slate-400'}`}><Icon name="clipboard" /><span className="text-[10px] font-black mt-1 uppercase">服儀檢查</span></button>
-                        <button onClick={() => { if(isAdmin) setView('manage'); else { setShowLogin(true); setPwInput(''); setLoginErr(false); } }} className={`flex flex-col items-center p-3 rounded-2xl transition-all active-scale ${view === 'manage' ? 'bg-slate-900 text-white shadow-lg' : 'text-slate-400'}`}><Icon name="users" /><span className="text-[10px] font-black mt-1 uppercase">人員管理</span></button>
-                        <button onClick={() => { if(isAdmin) setView('history'); else { setShowLogin(true); setPwInput(''); setLoginErr(false); } }} className={`flex flex-col items-center p-3 rounded-2xl transition-all active-scale ${view === 'history' ? 'bg-slate-900 text-white shadow-lg' : 'text-slate-400'}`}><Icon name="chart" /><span className="text-[10px] font-black mt-1 uppercase">數據統計</span></button>
+                        <button onClick={() => setView('check')} className={`flex flex-col items-center p-3 rounded-2xl transition-all active-scale ${view === 'check' ? 'bg-slate-900 text-white shadow-lg' : 'text-slate-400'}`}><Icon name="clipboard" className="w-5 h-5"/><span className="text-[10px] font-black mt-1 uppercase">服儀檢查</span></button>
+                        <button onClick={() => { if(isAdmin) setView('manage'); else { setShowLogin(true); setPwInput(''); setLoginErr(false); } }} className={`flex flex-col items-center p-3 rounded-2xl transition-all active-scale ${view === 'manage' ? 'bg-slate-900 text-white shadow-lg' : 'text-slate-400'}`}><Icon name="users" className="w-5 h-5"/><span className="text-[10px] font-black mt-1 uppercase">人員管理</span></button>
+                        <button onClick={() => { if(isAdmin) setView('history'); else { setShowLogin(true); setPwInput(''); setLoginErr(false); } }} className={`flex flex-col items-center p-3 rounded-2xl transition-all active-scale ${view === 'history' ? 'bg-slate-900 text-white shadow-lg' : 'text-slate-400'}`}><Icon name="chart" className="w-5 h-5"/><span className="text-[10px] font-black mt-1 uppercase">數據統計</span></button>
                     </nav>
 
                     {activeEmp && (
                         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 animate-in fade-in duration-200">
                             <div className="bg-white w-full max-w-md rounded-t-[32px] sm:rounded-[32px] shadow-2xl overflow-hidden animate-in slide-in-from-bottom duration-300 flex flex-col">
                                 <div className="p-6 bg-slate-50 border-b border-slate-100 flex justify-between items-center">
-                                    <div><h3 className="text-xl font-black text-slate-800">{(activeEmp.name || "未知")}</h3><p className="text-[10px] font-black text-slate-400 uppercase tracking-tighter">{(activeEmp.dept || "未知")} 規範檢查</p></div>
-                                    <button onClick={() => setActiveEmp(null)} className="p-2 text-slate-300 hover:text-slate-900 transition-colors"><Icon name="x" /></button>
+                                    <div className="min-w-0 flex-1 pr-4"><h3 className="text-xl font-black text-slate-800 truncate">{(activeEmp.name || "未知")}</h3><p className="text-[10px] font-black text-slate-400 uppercase tracking-tighter truncate">{(activeEmp.dept || "未知")} 規範檢查</p></div>
+                                    <button onClick={() => setActiveEmp(null)} className="p-2 text-slate-300 hover:text-slate-900 flex-shrink-0 transition-colors"><Icon name="x" /></button>
                                 </div>
                                 <div className="p-5 overflow-y-auto no-scrollbar space-y-3" style={{ maxHeight: '60vh' }}>
                                     <button onClick={() => { const items = getItems(activeEmp.dept); setTempChecks(items.reduce((a, i) => ({...a, [i]: true}), {})); }} className="w-full py-4 bg-green-500 text-white rounded-2xl font-black shadow-lg shadow-green-100 flex items-center justify-center gap-2 active-scale"><Icon name="check" className="w-5 h-5" /> 標記全部合格</button>
@@ -358,7 +371,7 @@
                                             setActiveEmp(null); 
                                         } 
                                     }} className="text-slate-400 text-[10px] font-black uppercase hover:text-slate-600 transition-colors">清除紀錄</button>
-                                    <button onClick={saveCheck} className="col-span-2 bg-slate-900 text-white py-4 rounded-2xl font-black shadow-xl shadow-slate-300 active-scale">確認並儲存</button>
+                                    <button onClick={saveCheck} className="col-span-2 bg-slate-900 text-white py-4 rounded-2xl font-black shadow-xl active-scale">確認並儲存</button>
                                 </div>
                             </div>
                         </div>
